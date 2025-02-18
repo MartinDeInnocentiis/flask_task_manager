@@ -7,6 +7,47 @@ auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
+    """
+    Register a new user.
+    ---
+    tags:
+      - Authentication
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          required:
+            - username
+            - password
+          properties:
+            username:
+              type: string
+              description: The user's username.
+              example: "john_doe"
+            password:
+              type: string
+              description: The user's password.
+              example: "secret123"
+    responses:
+      201:
+        description: User registered successfully.
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "User registered successfully"
+      400:
+        description: Missing data or user already exists.
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Missing data..."      
+    """
     data = request.get_json()
     username = data.get('username')
     password = data.get('password')
@@ -27,6 +68,36 @@ def register():
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
+    """
+    Login a user and return a JWT token.
+    ---
+    tags:
+      - Authentication
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          required:
+            - username
+            - password
+          properties:
+            username:
+              type: string
+            password:
+              type: string
+    responses:
+      200:
+        description: Login successful.
+        schema:
+          type: object
+          properties:
+            access_token:
+              type: string
+      401:
+        description: Invalid credentials.
+    """
     data = request.get_json()
     username = data.get('username')
     password = data.get('password')

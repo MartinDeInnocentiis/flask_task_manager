@@ -2,6 +2,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from config import Config
+from flasgger import Swagger
 from flask_jwt_extended import JWTManager
 
 db = SQLAlchemy()
@@ -15,6 +16,26 @@ def create_app(config_class=Config):
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
+    
+    Swagger(app, template={
+        "swagger": "2.0",
+        "info": {
+            "title": "Task Manager API",
+            "description": "API documentation for Task Manager",
+            "version": "1.0.0"
+        },
+        "securityDefinitions": {
+            "Bearer": {
+                "type": "apiKey",
+                "name": "Authorization",
+                "in": "header",
+                "description": "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\""
+            }
+        },
+        "security": [
+            {"Bearer": []}
+        ]
+    })
     
     #IMPORTING MODELS FOR SQLAlchemy
     from app.models import Task, User

@@ -8,6 +8,68 @@ tasks_bp = Blueprint('tasks', __name__)
 @tasks_bp.route('/tasks', methods=['POST'])
 @jwt_required()
 def create_task():
+    """
+    Create a new task.
+    ---
+    tags:
+      - Tasks
+    security:
+      - Bearer: []
+    parameters:
+      - in: body
+        name: body
+        description: Task data
+        required: true
+        schema:
+          type: object
+          required:
+            - title
+          properties:
+            title:
+              type: string
+              description: Title of the task.
+              example: "Buy groceries"
+            description:
+              type: string
+              description: Detailed description of the task.
+              example: "Buy milk, eggs, and bread."
+            status:
+              type: string
+              description: 'Status of the task. Allowed values: "To Do", "In Progress", "Done". Defaults to "To Do" if not provided.'
+              example: "To Do"
+    responses:
+      201:
+        description: Task created successfully.
+        schema:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 123
+            title:
+              type: string
+              example: "Buy groceries"
+            description:
+              type: string
+              example: "Buy milk, eggs, and bread."
+            status:
+              type: string
+              example: "To Do"
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
+              type: string
+              format: date-time
+      400:
+        description: Missing title or invalid status.
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "MUST contain TITLE"
+    """
     user_id = get_jwt_identity()
     data = request.get_json()
 
@@ -43,6 +105,77 @@ def create_task():
 @tasks_bp.route('/tasks', methods=['GET'])
 @jwt_required()
 def get_tasks():
+    """
+    Retrieve a paginated list of tasks for the authenticated user.
+    ---
+    tags:
+      - Tasks
+    security:
+      - Bearer: []
+    parameters:
+      - in: query
+        name: page
+        type: integer
+        description: 'Page number (default: 1).'
+        required: false
+        default: 1
+      - in: query
+        name: per_page
+        type: integer
+        description: 'Number of tasks per page (default: 3, maximum 100).'
+        required: false
+        default: 3
+    responses:
+      200:
+        description: A list of tasks with pagination details.
+        schema:
+          type: object
+          properties:
+            tasks:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 123
+                  title:
+                    type: string
+                    example: "Buy groceries"
+                  description:
+                    type: string
+                    example: "Buy milk, eggs, and bread."
+                  status:
+                    type: string
+                    example: "To Do"
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
+            pagination:
+              type: object
+              properties:
+                total_items:
+                  type: integer
+                  example: 15
+                total_pages:
+                  type: integer
+                  example: 5
+                current_page:
+                  type: integer
+                  example: 1
+                per_page:
+                  type: integer
+                  example: 3
+                has_next:
+                  type: boolean
+                  example: true
+                has_prev:
+                  type: boolean
+                  example: false
+    """
     user_id = get_jwt_identity()
     
     # GET QUERY PARAMS
@@ -83,6 +216,53 @@ def get_tasks():
 @tasks_bp.route('/tasks/<int:task_id>', methods=['GET'])
 @jwt_required()
 def get_task(task_id):
+    """
+    Retrieve a specific task by its ID.
+    ---
+    tags:
+      - Tasks
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: task_id
+        type: integer
+        description: The ID of the task to retrieve.
+        required: true
+        example: 123
+    responses:
+      200:
+        description: The task details.
+        schema:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 123
+            title:
+              type: string
+              example: "Buy groceries"
+            description:
+              type: string
+              example: "Buy milk, eggs, and bread."
+            status:
+              type: string
+              example: "To Do"
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
+              type: string
+              format: date-time
+      404:
+        description: Task not found.
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Task not found"
+    """
     user_id = get_jwt_identity()
     task = Task.query.filter_by(id=task_id, user_id=user_id).first()
     
@@ -101,6 +281,63 @@ def get_task(task_id):
 @tasks_bp.route('/tasks/<int:task_id>', methods=['PUT', 'PATCH'])
 @jwt_required()
 def update_task(task_id):
+    """
+    Update an existing task.
+    ---
+    tags:
+      - Tasks
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: task_id
+        type: integer
+        description: The ID of the task to update.
+        required: true
+        example: 123
+      - in: body
+        name: body
+        description: Data to update the task.
+        required: true
+        schema:
+          type: object
+          properties:
+            title:
+              type: string
+              example: "Updated Task Title"
+            description:
+              type: string
+              example: "Updated task description"
+            status:
+              type: string
+              description: 'Allowed values: "To Do", "In Progress", "Done".'
+              example: "Done"
+    responses:
+      200:
+        description: Task updated successfully.
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Task updated successfully"
+      400:
+        description: Invalid STATUS value.
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Invalid STATUS value"
+      404:
+        description: Task not found.
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Task not found"
+    """
     user_id = get_jwt_identity()
     task = Task.query.filter_by(id=task_id, user_id=user_id).first()
     
@@ -127,6 +364,38 @@ def update_task(task_id):
 @tasks_bp.route('/tasks/<int:task_id>', methods=['DELETE'])
 @jwt_required()
 def delete_task(task_id):
+    """
+    Delete a task by its ID.
+    ---
+    tags:
+      - Tasks
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: task_id
+        type: integer
+        description: The ID of the task to delete.
+        required: true
+        example: 123
+    responses:
+      200:
+        description: Task deleted successfully.
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Task deleted successfully"
+      404:
+        description: Task not found.
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Task not found"
+    """
     user_id = get_jwt_identity()
     task = Task.query.filter_by(id=task_id, user_id=user_id).first()
     
