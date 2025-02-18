@@ -44,10 +44,21 @@ def create_task():
 @jwt_required()
 def get_tasks():
     user_id = get_jwt_identity()
-    tasks = Task.query.filter_by(user_id=user_id).all()
-
+    
+    # GET QUERY PARAMS
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 3, type=int) # YOU CAN ADD QUERY PARAM ?per_page= TO THE ENDPOINT
+    
+    # LIMIT per_page VALUE TO 100
+    per_page = min(per_page, 100) # /tasks?per_page=100
+    
+    # PAGINATED QUERY
+    pagination = Task.query.filter_by(user_id=user_id)\
+        .order_by(Task.created_at.desc())\
+        .paginate(page=page, per_page=per_page)
+    
     tasks_list = []
-    for task in tasks:
+    for task in pagination.items:
         tasks_list.append({
             'id': task.id,
             'title': task.title,
@@ -57,7 +68,17 @@ def get_tasks():
             'updated_at': task.updated_at
         })
     
-    return jsonify(tasks_list), 200
+    return jsonify({
+        'tasks': tasks_list,
+        'pagination': {
+            'total_items': pagination.total,
+            'total_pages': pagination.pages,
+            'current_page': page,
+            'per_page': per_page,
+            'has_next': pagination.has_next,
+            'has_prev': pagination.has_prev
+        }
+    }), 200
 
 @tasks_bp.route('/tasks/<int:task_id>', methods=['GET'])
 @jwt_required()
